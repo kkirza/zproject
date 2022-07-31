@@ -1,5 +1,5 @@
 <?php
-
+//clear
 class Tag{
 	public $nameTag;
 	public $attrs = [];
