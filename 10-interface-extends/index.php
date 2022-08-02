@@ -1,12 +1,21 @@
 <?php
 
-abstract class Node{
-	abstract public function render() : string;
+interface Renderable{
+	public function render() : string;
 }
 
-abstract class Tag extends Node{
+interface Validable{
+	public function isValid() : bool;
+}
+
+interface INode extends Renderable,Validable{
+
+}
+
+abstract class Tag implements INode{
 	protected string $name; 
 	protected array $attrs = []; 
+	protected array $allowedNames;
 
 	public function __construct(string $name){
 		$this->name = $name;
@@ -15,6 +24,10 @@ abstract class Tag extends Node{
 	public function attr(string $name, string $value){
 		$this->attrs[$name] = $value;
 		return $this;
+	}
+
+	public function isValid() : bool{
+		return in_array($this->name, $this->allowedNames);
 	}
 
 	protected function attrsToString() : string{
@@ -29,6 +42,8 @@ abstract class Tag extends Node{
 }
 
 class SingleTag extends Tag{
+	protected array $allowedNames = ['img', 'hr'];
+	
 	public function render() : string{
 		$attrsStr = $this->attrsToString();
 		return "<{$this->name} $attrsStr>";
@@ -36,9 +51,10 @@ class SingleTag extends Tag{
 }
 
 class PairTag extends Tag{
+	protected array $allowedNames = ['div', 'span', 'a'];
 	protected array $children = []; 
 	
-	public function appendChild(Node $child){
+	public function appendChild(INode $child){
 		$this->children[] = $child;
 		return $this;
 	}
@@ -46,8 +62,8 @@ class PairTag extends Tag{
 	public function render() : string{
 		$attrsStr = $this->attrsToString();
 
-		$childrenHTML = array_map(function(Node $tag){
-			return $tag->render();
+		$childrenHTML = array_map(function(INode $tag){
+			return $tag->isValid() ? $tag->render() : '';
 		}, $this->children);
 
 		$innerHTML = implode('', $childrenHTML);
@@ -55,15 +71,29 @@ class PairTag extends Tag{
 	}
 }
 
-class TextNode extends Node{
+class TextNode implements INode{
 	protected string $text;
 
 	public function __construct(string $text){
-		$this->text = $text;
+		$this->text = trim($text);
 	}
 
 	public function render() : string{
 		return $this->text;
+	}
+
+	public function isValid() : bool{
+		return $this->text !== '';
+	}
+}
+
+class RandomSomething implements INode {
+	public function render() : string{
+		return mt_rand(1, 100000);
+	}
+
+	public function isValid() : bool{
+		return true;
 	}
 }
 
@@ -72,8 +102,9 @@ $a = (new PairTag('a'))->attr('href', '#')->appendChild(new TextNode('go home'))
 $label = (new PairTag('label'))
 	->appendChild($img)
 	->appendChild(new TextNode('attention'))
+	->appendChild(new RandomSomething())
 	->appendChild($a);
-
+//echo $img->isValid() ? 1 : 0;
 $html = $label->render();
 echo $html;
 echo '<hr>' . htmlspecialchars($html);

@@ -1,10 +1,10 @@
 <?php
 
-abstract class Node{
-	abstract public function render() : string;
+interface Renderable{
+	public function render() : string;  
 }
 
-abstract class Tag extends Node{
+abstract class Tag implements Renderable{
 	protected string $name; 
 	protected array $attrs = []; 
 
@@ -17,7 +17,8 @@ abstract class Tag extends Node{
 		return $this;
 	}
 
-	protected function attrsToString() : string{
+
+	protected function attrsToString() : string{ 
 		$pairs = [];
 
 		foreach($this->attrs as $name => $value){
@@ -38,7 +39,7 @@ class SingleTag extends Tag{
 class PairTag extends Tag{
 	protected array $children = []; 
 	
-	public function appendChild(Node $child){
+	public function appendChild(Renderable $child){
 		$this->children[] = $child;
 		return $this;
 	}
@@ -46,7 +47,7 @@ class PairTag extends Tag{
 	public function render() : string{
 		$attrsStr = $this->attrsToString();
 
-		$childrenHTML = array_map(function(Node $tag){
+		$childrenHTML = array_map(function(Renderable $tag){
 			return $tag->render();
 		}, $this->children);
 
@@ -55,20 +56,19 @@ class PairTag extends Tag{
 	}
 }
 
-class TextNode extends Node{
+class TextNode implements Renderable{
 	protected string $text;
 
-	public function __construct(string $text){
+	public function __construct (string $text){
 		$this->text = $text;
 	}
 
-	public function render() : string{
+	public function render() :string {
 		return $this->text;
 	}
-}
-
-$img = (new SingleTag('img'))->attr('src', 'f1.jpg')->attr('alt', 'f1 not found');
-$a = (new PairTag('a'))->attr('href', '#')->appendChild(new TextNode('go home'));
+	
+}$img = (new SingleTag('img'))->attr('src', 'f1.jpg')->attr('alt','f1 not found');
+$a = (new PairTag('a'))->attr('href','#')->appendChild(new TextNode('go home'));
 $label = (new PairTag('label'))
 	->appendChild($img)
 	->appendChild(new TextNode('attention'))
@@ -77,5 +77,3 @@ $label = (new PairTag('label'))
 $html = $label->render();
 echo $html;
 echo '<hr>' . htmlspecialchars($html);
-
-
